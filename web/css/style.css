@@ -1,0 +1,21 @@
+.col-1{width:98.50% !important;display: inline-block;}
+.col-2{width:48.50% !important;display: inline-block;}
+.col-3{width:32.32% !important;display: inline-block;}
+.col-4{width:24.50% !important;display: inline-block;}
+.col-5{width:19.50% !important;display: inline-block;}
+.d-inline {display: inline !important;}
+.d-inline-block {display: inline-block !important;}
+.d-block {display: block !important;}
+.d-table {display: table !important;}
+.d-table-row {display: table-row !important;}
+.d-table-cell {display: table-cell !important;}
+.inline-block{display:inline-block;}
+.d-none{display: none!important;}
+.m-0{margin:0px!important;}
+.position-relative{position: relative;}
+.position-absolute{position: absolute;}
+.bspp_wrapper label{font-weight: 500; display: block;}
+.bspp_wrapper input[type=text], 
+.bspp_wrapper input[type=number], 
+.bspp_wrapper input[type=email], 
+.bspp_wrapper select{min-width: 225px;}
