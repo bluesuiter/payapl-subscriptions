@@ -8,16 +8,59 @@ use LcFramework\Controllers\Paypal\SettingsController;
 
 class ProductsController extends ControllerClass{
 
+    /**
+     * 
+     */
     public function addProduct(){
-        bspp_loadView('paypal/products/create');
+        return bspp_loadView('paypal/products/create');
     }
 
+    /**
+     * 
+     */
     public function saveProduct(){
         $this->verifyNonce('bspp_pp_add_product', '_bspp_create_pp_product');
-        $objPayPal = new PayPalController();
-        $objPayPal->getAccessToken();
         
-        $data = [
+        $product = [
+            'name' => getArrayValue($_POST, 'product_name'),
+            'description' => getArrayValue($_POST, 'product_description'),
+            'type' => getArrayValue($_POST, 'product_type'),
+            'category' => getArrayValue($_POST, 'product_category'),
+            'home_url' => getArrayValue($_POST, 'home_url'),
+        ];
+     
+        $args['endpoint'] = 'catalogs/products';
+        $args['datafields'] = ($product);
+
+        return (new PayPalController())->postProductRequest($args);
+    }
+
+    /**
+     * 
+     */
+    public function getProductList(){
+        $page = isset($_GET['paged']) ? $_GET['paged'] : 1;
+        $args['endpoint'] = "catalogs/products/?page_size=20&page=$page&total_required=true";
+        $productsData = (new PayPalController())->getProductRequest($args);
+        $this->loadView('paypal/products/index', $productsData);
+    }
+
+    /**
+     * 
+     */
+    public function editProduct(){
+        $args['endpoint'] = 'catalogs/products/'.getArrayValue($_GET, 'product');
+        $product = (new PayPalController())->getProductRequest($args);
+        $this->loadView('paypal/products/edit', $product);
+    }
+
+    /**
+     * 
+     */
+    public function updateProduct(){
+        $this->verifyNonce('bspp_pp_update_product', '_bspp_update_pp_product');
+        
+        $product = [
             'name' => getArrayValue($_POST, 'product_name'),
             'description' => getArrayValue($_POST, 'product_description'),
             'type' => getArrayValue($_POST, 'product_type'),
@@ -25,52 +68,10 @@ class ProductsController extends ControllerClass{
             'home_url' => getArrayValue($_POST, 'home_url'),
         ];
 
-        $objSettings = new SettingsController();
-        $this->savePayPalProduct($data);       
-    }
+        $args['method'] = 'PATCH';
+        $args['endpoint'] = 'catalogs/products/'.getArrayValue($_GET, 'product_id');
+        $args['datafields'] = ($product);
 
-    public function savePayPalProduct($product){
-        $data = get_option('_bspp_pp_secret_details_');
-        $data = json_decode($data);
-
-        $settings = SettingsController::readSettings();
-        $headers = ['Accept: application/json',
-                   'Accept-Language: en_US',
-                   'Authorization: Bearer '.$data->access_token,
-                   'PayPal-Request-Id: PRODUCT-'.date('YmdHis').'-'.rand(0, 999)];
-
-        $url = 'https://api.sandbox.paypal.com/v1/catalogs/products';
-
-        if($settings->env !== 'sandbox'){
-            $url = 'https://api.paypal.com/v1/catalogs/products';
-        }
-
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => "",
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => "POST",
-            CURLOPT_POSTFIELDS => json_encode($product),
-            CURLOPT_HTTPHEADER => array(
-                "Content-Type: application/json",
-                "Authorization: Bearer ".$data->access_token,
-            ),
-        ));
-
-        $response = curl_exec($curl);
-        var_dump($response);
-
-        curl_close($curl);
-        echo 'done';
-    }
-
-    public function getProductList(){
-
+        return (new PayPalController())->postProductRequest($args);
     }
 }

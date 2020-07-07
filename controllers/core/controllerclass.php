@@ -14,7 +14,7 @@ class ControllerClass {
             }
         }
 
-        $view = twg_framework_view . $view . '.php';
+        $view = bspp_framework_view . $view . '.php';
         if (!file_exists($view)) {
             echo 'View not found!';
             return false;

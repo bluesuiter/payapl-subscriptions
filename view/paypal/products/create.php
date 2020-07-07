@@ -1,5 +1,5 @@
 <div class="wrap bspp_wrapper">
-    <h3>Add Product</h3>
+    <h3 class="wp-heading-inline">Add Product</h3>
     <form id="product_form" class="">
         <p class="col-4">
             <label>Product name:</label>

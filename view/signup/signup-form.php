@@ -1,4 +1,4 @@
-<form id="register_user" action="<?php echo $_SERVER['REQUEST_URI'] ?>" method="post">
+<form id="register_user" action="" method="post">
     <div>
         <label for="fname">First Name <strong>*</strong></label>
         <input class="required" type="text" name="ufname" error-message="Please enter your first-name">
@@ -28,8 +28,8 @@
         <label for="plan">Plan <strong>*</strong></label>
         <p>
             <span><input name="plan" type="radio" class="required" value="free" checked>Free</span>
-            <span><input name="plan" type="radio" class="required" value="gold">Gold (10 GBP)</span>
-            <span><input name="plan" type="radio" class="required" value="yearl">Yearl (100 GBP)</span>
+            <span><input name="plan" type="radio" class="required" value="monthly">Gold (10 GBP)</span>
+            <span><input name="plan" type="radio" class="required" value="yearly">Yearly (100 GBP)</span>
         </p>
     </div>
     <?php wp_nonce_field('bspp_reg_call', 'bspp_r3g_ca11',) ?>
@@ -41,15 +41,27 @@
     div { margin-bottom: 2px; }
     input { margin-bottom: 4px; }
 </style>
-<script>
+
+<?php $objSettings = new \LcFramework\Controllers\Paypal\SettingsController(); ?>
+<script defer>
 jQuery(function($){
     $('#register_user').on('submit', function(e){
         e.preventDefault();
         if(validateForm('#register_user')){
             $.post('<?php echo admin_url('admin-ajax.php') ?>', $(this).serialize(), function(res){
-                alert(res);
+                console.log(res)
+                if(typeof res.success != 'undefined'){
+                    
+                    if(res.success === 'true'){
+                        window.location.replace("<?php echo $objSettings::readSettings('success_page') ?>");
+                    }
+
+                    if(res.success === 'false'){
+                        window.location.replace("<?php echo $objSettings::readSettings('failure_page') ?>");
+                    }
+                }
             });
         }
     });
-})
+});
 </script>

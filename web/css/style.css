@@ -14,8 +14,9 @@
 .m-0{margin:0px!important;}
 .position-relative{position: relative;}
 .position-absolute{position: absolute;}
-.bspp_wrapper label{font-weight: 500; display: block;}
+.bspp_wrapper label{font-weight: 500; display: block; padding-bottom: 2px;}
 .bspp_wrapper input[type=text], 
 .bspp_wrapper input[type=number], 
 .bspp_wrapper input[type=email], 
 .bspp_wrapper select{min-width: 225px;}
+.bspp_wrapper .pp_plan_removeRow{right: 0px; color: #b45; font-size: 22px;}

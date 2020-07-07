@@ -22,7 +22,7 @@ class SettingsController{
 
             if(!empty($key)){
                 $data = json_decode($data);
-                return $data[$key];
+                return getArrayValue($data, $key);
             }
             return json_decode($data);
         }catch(Exception $e){
@@ -43,6 +43,9 @@ class SettingsController{
                 $data['lv_auth_code'] = getArrayValue($_POST, 'lv_auth_code');
                 $data['live_id'] = getArrayValue($_POST, 'live_id');
                 $data['live_secret'] = getArrayValue($_POST, 'live_secret');
+                $data['register_page'] = getArrayValue($_POST, 'register_page');
+                $data['success_page'] = getArrayValue($_POST, 'success_page');
+                $data['failure_page'] = getArrayValue($_POST, 'failure_page');
 
                 if(update_option(self::$valKey, json_encode($data))){
                     return wp_send_json_success('Saved successfully.');

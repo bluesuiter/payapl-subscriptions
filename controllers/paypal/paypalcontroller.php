@@ -1,24 +1,39 @@
 <?php
 namespace LcFramework\Controllers\Paypal;
 
+use PayPal\Api\Agreement;
+use PayPal\Api\Payer;
+use PayPal\Api\Plan;
+use PayPal\Api\ShippingAddress;
+use LcFramework\Controllers\SignUp;
 use LcFramework\Controllers\Paypal\PlansController;
 use LcFramework\Controllers\Paypal\ProductsController;
 use LcFramework\Controllers\Paypal\SettingsController;
+use LcFramework\Controllers\Paypal\SubscriberController;
 
 
 class PayPalController{
 
     public function addAdminMenu(){
-        $objPlans = new PlansController();
-        add_menu_page('PayPal', 'PayPal Plans', 'delete_pages', 'bspp_list_paypal', array($objPlans, 'listSubscriptionPlan'), 'dashicons-book', '12');
-        add_submenu_page('bspp_list_paypal', 'Add PayPal Plan', 'Add PayPal Plan', 'delete_pages', 'bspp_add_paypal_plan', array($objPlans, 'createSubscriptionPlan'));
+        $objSubscribers = new SubscriberController();
+        add_menu_page('Subscribers', 'PayPal Subscribers', 'delete_pages', 'bspp_paypal_subscribers', array($objSubscribers, 'listSubscribers'), 'dashicons-book', '12');
+        add_submenu_page('', 'View Subscription', 'View Subscription', 'delete_pages', 'bspp_view_sub', array($objSubscribers, 'view'));
+        add_submenu_page('', 'Edit Subscription', 'Edit Subscription', 'delete_pages', 'bspp_edit_sub', array($objSubscribers, 'edit'));
 
+        /** products */
         $objProducts = new ProductsController();
-        add_submenu_page('bspp_list_paypal', 'PayPal Products', 'Products', 'delete_pages', 'bspp_paypal_proucts', array($objProducts, 'getProductList'));
-        add_submenu_page('bspp_list_paypal', 'Add Products', 'Add Products', 'delete_pages', 'bspp_paypal_add_proucts', array($objProducts, 'addProduct'));
-        
+        add_submenu_page('bspp_paypal_subscribers', 'PayPal Products', 'PayPal Products', 'delete_pages', 'bspp_paypal_proucts', array($objProducts, 'getProductList'));
+        add_submenu_page('', 'Add Product', 'Add Product', 'delete_pages', 'bspp_paypal_add_product', array($objProducts, 'addProduct'));
+        add_submenu_page('', 'Edit Product', 'Edit Products', 'delete_pages', 'bspp_paypal_edit_product', array($objProducts, 'editProduct'));
+
+        $objPlans = new PlansController();
+        add_submenu_page('bspp_paypal_subscribers', 'PayPal Plans', 'PayPal Plans', 'delete_pages', 'bspp_paypal_plan', array($objPlans, 'plansList'));
+        add_submenu_page('', 'Add PayPal Plan', 'Add PayPal Plan', 'delete_pages', 'bspp_add_paypal_plan', array($objPlans, 'createSubscriptionPlan'));
+        add_submenu_page('', 'Edit PayPal Plan', 'Edit PayPal Plan', 'delete_pages', 'bspp_edit_paypal_plan', array($objPlans, 'editSubscriptionPlan'));
+        add_submenu_page('', 'PayPal Plan', 'PayPal Plan', 'delete_pages', 'bspp_pp_view_plan', array($objPlans, 'viewSubscriptionPlan'));
+
         $objSettings = new SettingsController();
-        add_submenu_page('bspp_list_paypal', 'Settings', 'Settings', 'delete_pages', 'bspp_paypal_settings', array($objSettings, 'paypalSettings'));
+        add_submenu_page('bspp_paypal_subscribers', 'Settings', 'Settings', 'delete_pages', 'bspp_paypal_settings', array($objSettings, 'paypalSettings'));
         //add_submenu_page($menu_slug, 'Lead Logs', 'Lead Log', $capability, 'leadLog', array($this, 'leadLogs'));
     }
 
@@ -28,9 +43,13 @@ class PayPalController{
 
         $objProducts = new ProductsController();
         add_action('wp_ajax_bspp_add_pp_product', array($objProducts, 'saveProduct'));
-
+        add_action('wp_ajax_bspp_pp_update_product', array($objProducts, 'updateProduct'));
+        
         $objSettings = new SettingsController();
         add_action('wp_ajax_bspp_paypal_config_admin', array($objSettings, 'storeSettings'));
+
+        $objSignup = new SignUp();
+        $objSignup->registerSignUpApi();
     }
 
     public function scheduledTask(){
@@ -38,15 +57,16 @@ class PayPalController{
         if (!wp_next_scheduled('bspp_pp_hourly_job')) {
             wp_schedule_event(time(), 'hourly', 'bspp_pp_hourly_job');
         }
-        add_action('bspp_pp_hourly_job', [$this, 'refreshPayPalToken']); 
+        
+        add_action('bspp_pp_hourly_job', [(new SubscriberController()), 'capturePayment']); 
     }
 
-    public function getAccessToken(){
+    public static function getAccessToken(){
         $data = get_option('_bspp_pp_secret_details_');
         $data = json_decode($data);
 
         if(time() > $data->expiry){
-            $this->getPayPalAccessToken();
+            self::getPayPalAccessToken();
             $data = get_option('_bspp_pp_secret_details_');
             $data = json_decode($data);
         }
@@ -97,13 +117,16 @@ class PayPalController{
             /** success case */
             $data->expiry = (time() + getArrayValue($data, 'expires_in'));
             if(update_option('_bspp_pp_secret_details_', json_encode($data))){
-                return wp_send_json_success('Saved successfully.');
+                return  true;
             }
         }catch(Exception $e){
             return wp_send_json_error($e->getMessage());
         }
     }
 
+    /**
+    *
+    */
     protected function refreshPayPalToken(){
         $settings = SettingsController::readSettings();
         $curl = curl_init();
@@ -144,5 +167,104 @@ class PayPalController{
         curl_close($curl);
         pr($err);
         exit;
+    }
+
+    public function postProductRequest(array $args){
+        $data = PayPalController::getAccessToken();
+
+        $settings = SettingsController::readSettings();
+        $headers = ['Accept: application/json',
+                   'Accept-Language: en_US',
+                   'Authorization: Bearer '.$data->access_token,
+                   'PayPal-Request-Id: PRODUCT-'.date('YmdHis').'-'.rand(0, 999)];
+
+        $url = 'https://api.sandbox.paypal.com/v1/';
+        if($settings->env !== 'sandbox'){
+            $url = 'https://api.paypal.com/v1/';
+        }
+
+        //echo $data->access_token, json_encode($args['datafields']); exit;
+
+        $method = isset($args['method']) ? $args['method'] : 'POST';
+        $curl = curl_init();
+        
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $url.$args['endpoint'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_POSTFIELDS => json_encode($args['datafields']),
+            CURLOPT_HTTPHEADER => array(
+                "Content-Type: application/json",
+                "Authorization: Bearer ".$data->access_token,
+            ),
+        ));
+
+        curl_setopt($ch, );
+        
+        $res = curl_exec($curl);
+        if($res){
+            return $res;
+        }
+
+        $err = curl_error($curl);
+        if($err){
+            return $err;
+        }
+        curl_close($curl);
+
+        if($err){
+            return wp_send_json_error(json_decode($err));
+        }
+    }
+
+    public function getProductRequest(array $args){
+        $data = PayPalController::getAccessToken();
+
+        $settings = SettingsController::readSettings();
+        $headers = ['Accept: application/json',
+                   'Accept-Language: en_US',
+                   'Authorization: Bearer '.$data->access_token,
+                   'PayPal-Request-Id: PRODUCT-'.date('YmdHis').'-'.rand(0, 999)];
+
+        $url = 'https://api.sandbox.paypal.com/v1/';
+
+        if($settings->env !== 'sandbox'){
+            $url = 'https://api.paypal.com/v1/';
+        }
+
+        $curl = curl_init();
+
+        $page = isset($_GET['paged']) ? $_GET['paged'] : 1;
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $url.$args['endpoint'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+            CURLOPT_HTTPHEADER => array(
+                "Authorization: Bearer ".$data->access_token,
+            ),
+        ));
+
+        $res = curl_exec($curl);    
+        if($res){
+            return json_decode($res);
+        }
+
+        $err = curl_error($curl);
+        if($err){
+            return json_decode($err);
+        }
+        curl_close($curl);
     }
 }

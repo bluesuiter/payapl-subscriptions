@@ -31,6 +31,7 @@ if (!defined('bspp_framework_view')) {
 }
 
 require_once trailingslashit(dirname(__FILE__)) . 'helper/functions.php';
+require_once trailingslashit(dirname(__FILE__)) . 'helper/filters.php';
 
 /**
  * Starts the plugin by initializing the meta box, its display, and then
@@ -39,3 +40,5 @@ require_once trailingslashit(dirname(__FILE__)) . 'helper/functions.php';
 function bspp_framework_init() {
     $meta_box = new LcFramework\Controllers\LcFramework();
 }
+
+?>

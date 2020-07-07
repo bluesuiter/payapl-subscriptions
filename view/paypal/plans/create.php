@@ -1,29 +1,36 @@
 <div class="wrap bspp_wrapper">
+    <h3 class="wp-heading-inline">Product Details <button id="save_pp_plan" class="button button-primary alignright">Save Plan</button></h3>
     <form id="pp_add_plans" name="" class="">
-        <h3>Product Details <button id="save_pp_plan" class="button button-primary alignright">Save Plan</button></h3>
         <p class="col-4">
             <label>Product Id:</label>
-            <input name="product_id" type="text" readonly value="" id="product_id">
+            <input name="product_id" type="text" value="<?php echo $product; ?>" readonly id="product_id">
         </p>
         <p class="col-4">
-            <label>Product Name:</label>
-            <input name="product_name" type="text" id="product_name">
+            <label>Plan name:</label>
+            <input name="plan_name" type="text" id="plan_name">
         </p>
         <p class="col-4">
-            <label>Product Description:</label>
-            <input name="product_desc" type="text" id="product_desc">
+            <label>Plan description:</label>
+            <input name="plan_description" type="text" id="plan_description">
         </p>
         <p class="col-4">
-            <label>Product Status:</label>
-            <input name="product_status" type="text" id="product_status">
+            <label>Plan status:</label>
+            <select name="plan_status" id="plan_status">
+                <option value=""></option>
+                <option value="CREATED">Created</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="ACTIVE">Active</option>
+            </select>
         </p>
         <hr>
-        <h3>Billing Cycles <button type="button" id="bspp_add_pp" class="button button-default alignright">Add Plan</button></h3>
+        <h1 class="wp-heading-inline">Billing Cycles</h1>
+        <button type="button" id="bspp_add_pp" class="page-title-action">Add Billing Cycles</button>
+        <hr>
         <div id="plans_list" class="position-relative">
             <div class="plan_row col-1">
                 <span class="pp_plan_removeRow alignright dashicons dashicons-dismiss position-absolute"></span>
                 <p class="col-4">
-                    <label>Interval Unit: 
+                    <label>Interval unit:</label>
                     <select class="interval_unit" name="billing[0][interval_unit]" id="">
                         <option value=""></option>
                         <option value="DAY">Day</option>
@@ -33,11 +40,11 @@
                     </select>
                 </p>
                 <p class="col-4">
-                    <label>Interval Count:</label> 
+                    <label>Interval count:</label> 
                     <input type="number" size="50" min="1" placeholder="max 365" class="interval_count" name="billing[0][interval_count]" id="">
                 </p>
                 <p class="col-4">
-                    <label>Tenure Type:</label> 
+                    <label>Tenure type:</label> 
                     <select class="tenure_type" name="billing[0][tenure_type]" id="">
                         <option value=""></option>
                         <option value="REGULAR">Regular</option>
@@ -49,11 +56,11 @@
                     <input type="number" placeholder="1-99" min="1" max="99" class="sequence" name="billing[0][sequence]" id="">
                 </p>
                 <p class="col-4">
-                    <label>Total Cycles:</label> 
+                    <label>Total cycles:</label> 
                     <input type="number" placeholder="1-999" min="1" max="999" class="total_cycles" name="billing[0][total_cycles]" id="">
                 </p>
                 <p class="col-4">
-                    <label>Plan Price:</label> 
+                    <label>Plan price:</label> 
                     <input type="text" class="plan_price" name="billing[0][plan_price]" id="">
                 </p>
                 <p class="col-4">
@@ -105,7 +112,7 @@
             });
         });
 
-        $('#plans_list').on('click', '.pp_plan_removeRow', function(){ alert('')
+        $('#plans_list').on('click', '.pp_plan_removeRow', function(){
             if($('div.plan_row').length > 1){
                 return $(this).parent('div.plan_row').remove();
             }
