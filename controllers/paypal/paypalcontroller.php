@@ -19,6 +19,7 @@ class PayPalController{
         add_menu_page('Subscribers', 'PayPal Subscribers', 'delete_pages', 'bspp_paypal_subscribers', array($objSubscribers, 'listSubscribers'), 'dashicons-book', '12');
         add_submenu_page('', 'View Subscription', 'View Subscription', 'delete_pages', 'bspp_view_sub', array($objSubscribers, 'view'));
         add_submenu_page('', 'Edit Subscription', 'Edit Subscription', 'delete_pages', 'bspp_edit_sub', array($objSubscribers, 'edit'));
+        // add_submenu_page('', 'Subscription', 'Subscription', 'delete_pages', 'bspp_subscriptions', array($objSubscribers, 'viewTransaction'));
 
         /** products */
         $objProducts = new ProductsController();
@@ -27,19 +28,20 @@ class PayPalController{
         add_submenu_page('', 'Edit Product', 'Edit Products', 'delete_pages', 'bspp_paypal_edit_product', array($objProducts, 'editProduct'));
 
         $objPlans = new PlansController();
-        add_submenu_page('bspp_paypal_subscribers', 'PayPal Plans', 'PayPal Plans', 'delete_pages', 'bspp_paypal_plan', array($objPlans, 'plansList'));
-        add_submenu_page('', 'Add PayPal Plan', 'Add PayPal Plan', 'delete_pages', 'bspp_add_paypal_plan', array($objPlans, 'createSubscriptionPlan'));
-        add_submenu_page('', 'Edit PayPal Plan', 'Edit PayPal Plan', 'delete_pages', 'bspp_edit_paypal_plan', array($objPlans, 'editSubscriptionPlan'));
-        add_submenu_page('', 'PayPal Plan', 'PayPal Plan', 'delete_pages', 'bspp_pp_view_plan', array($objPlans, 'viewSubscriptionPlan'));
+        $objPlans->planRoutes();
+        add_action('admin_post_bspp_updateSubscription', array($objPlans, 'updateSubscriptionPlan'));
 
         $objSettings = new SettingsController();
         add_submenu_page('bspp_paypal_subscribers', 'Settings', 'Settings', 'delete_pages', 'bspp_paypal_settings', array($objSettings, 'paypalSettings'));
         //add_submenu_page($menu_slug, 'Lead Logs', 'Lead Log', $capability, 'leadLog', array($this, 'leadLogs'));
+
+        add_submenu_page('bspp_paypal_subscribers', 'Export E-Mails', 'Export E-Mails', 'delete_pages', 'bspp_export_users', array($this, 'exportUserEmail'));
     }
 
     public function addPaypalAjaxEndpoint(){
         $objPlans = new PlansController();
         add_action('wp_ajax_bspp_paypal_add_plan', array($objPlans, 'addSubscriptionPlan'));
+        add_action('wp_ajax_bspp_change_plan_status', array($objPlans, 'activateSubscriptionPlan'));        
 
         $objProducts = new ProductsController();
         add_action('wp_ajax_bspp_add_pp_product', array($objProducts, 'saveProduct'));
@@ -48,24 +50,78 @@ class PayPalController{
         $objSettings = new SettingsController();
         add_action('wp_ajax_bspp_paypal_config_admin', array($objSettings, 'storeSettings'));
 
+        $objSubscribers = new SubscriberController();
+        $objSubscribers->defineActions();
+
         $objSignup = new SignUp();
         $objSignup->registerSignUpApi();
+
+        add_action('admin_post_bspp_updateSubscription', array((new PlansController()), 'updateSubscriptionPlan'));
+
+        add_action('set_user_role', [$this, 'user_role_update'], 10, 2);
+        //add_action('admin_post_nopriv_email_csv', [$this, 'writeCsvFile']);
+        add_action('admin_post_email_csv', [$this, 'writeCsvFile']);
     }
 
+    /**
+     * export user emails
+     */
+    function exportUserEmail() {
+        //pr(get_users());
+        bspp_loadView('paypal/export');
+    } 
+
+    function writeCsvFile(){
+        $filename = 'user_emails';
+        $date = date("Y-m-d H:i:s");
+        header('Content-Type: application/csv');
+        header('Pragma: no-cache');
+        header("Content-Disposition: attachment; filename=\"" . $filename . " " . $date . ".csv\";" );
+        header("Content-Transfer-Encoding: binary");
+
+
+        $users = get_users();
+        $date = date("Y-m-d H:i:s");
+        $output = fopen('php://output', 'w');
+        fputcsv($output, array('ID', 'E-Mail', 'Role'));
+        foreach ($users as $user) {
+            $line = [$user->data->ID, $user->data->user_email, getArrayValue($user->roles, 0)];
+            fputcsv($output, $line, ',');
+        }
+        fclose($output);        
+    }
+
+    /**
+     * mail sent on user role change
+     */
+    function user_role_update($user_id, $new_role) {
+        $site_url = get_bloginfo('wpurl');
+        $user_info = get_userdata( $user_id );
+        $to = $user_info->user_email;
+        $subject = "Role changed: ".$site_url."";
+        $message = "Hello " .$user_info->display_name . " your role has changed on ".$site_url.", you are now on " . $new_role . "plan.";
+        wp_mail($to, $subject, $message);
+    }
+
+    /**
+     * schedule tasks
+     */
     public function scheduledTask(){
         /** hourly Job */
         if (!wp_next_scheduled('bspp_pp_hourly_job')) {
             wp_schedule_event(time(), 'hourly', 'bspp_pp_hourly_job');
         }
-        
         add_action('bspp_pp_hourly_job', [(new SubscriberController()), 'capturePayment']); 
     }
 
+    /**
+     * get saved access token
+     */
     public static function getAccessToken(){
         $data = get_option('_bspp_pp_secret_details_');
         $data = json_decode($data);
 
-        if(time() > $data->expiry){
+        if(!isset($data->expiry) || time() > $data->expiry){
             self::getPayPalAccessToken();
             $data = get_option('_bspp_pp_secret_details_');
             $data = json_decode($data);
@@ -165,10 +221,13 @@ class PayPalController{
         $err = curl_error($curl);
 
         curl_close($curl);
-        pr($err);
+        //pr($err);
         exit;
     }
 
+    /**
+     * @param array $args
+     */
     public function postProductRequest(array $args){
         $data = PayPalController::getAccessToken();
 
@@ -204,9 +263,7 @@ class PayPalController{
                 "Authorization: Bearer ".$data->access_token,
             ),
         ));
-
-        curl_setopt($ch, );
-        
+      
         $res = curl_exec($curl);
         if($res){
             return $res;
@@ -229,8 +286,7 @@ class PayPalController{
         $settings = SettingsController::readSettings();
         $headers = ['Accept: application/json',
                    'Accept-Language: en_US',
-                   'Authorization: Bearer '.$data->access_token,
-                   'PayPal-Request-Id: PRODUCT-'.date('YmdHis').'-'.rand(0, 999)];
+                   'Authorization: Bearer '.$data->access_token];
 
         $url = 'https://api.sandbox.paypal.com/v1/';
 

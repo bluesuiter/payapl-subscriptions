@@ -48,7 +48,7 @@ jQuery(function($){
         }).done(function(res){
             alert(res.data);
         }).error(function(){
-
+            
         });
     });
 });

@@ -1,6 +1,7 @@
 <?php
 namespace LcFramework\Controllers\Paypal;
 
+use LcFramework\Controllers\BsppLogger as Logger;
 use LcFramework\Controllers\Core\ControllerClass;
 use LcFramework\Controllers\Paypal\PayPalController;
 use LcFramework\Controllers\Paypal\SettingsController;
@@ -32,7 +33,17 @@ class ProductsController extends ControllerClass{
         $args['endpoint'] = 'catalogs/products';
         $args['datafields'] = ($product);
 
-        return (new PayPalController())->postProductRequest($args);
+        $result = (new PayPalController())->postProductRequest($args);
+        $res = json_decode($result);
+        if($res->id){
+            return wp_send_json_success('Product created!');
+        }
+        
+        $objLogger = new Logger();
+        $objLogger->setModuleName('save_product');
+        $objLogger->setModuleContent($res);
+        $objLogger->createLog();
+        return wp_send_json_error('Some error occurred!');
     }
 
     /**

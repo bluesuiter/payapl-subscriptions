@@ -44,10 +44,10 @@ class SettingsController{
                 $data['live_id'] = getArrayValue($_POST, 'live_id');
                 $data['live_secret'] = getArrayValue($_POST, 'live_secret');
                 $data['register_page'] = getArrayValue($_POST, 'register_page');
-                $data['success_page'] = getArrayValue($_POST, 'success_page');
-                $data['failure_page'] = getArrayValue($_POST, 'failure_page');
+                $data['thank_page'] = getArrayValue($_POST, 'thank_page');
 
                 if(update_option(self::$valKey, json_encode($data))){
+                    update_option('_bspp_pp_secret_details_', '');
                     return wp_send_json_success('Saved successfully.');
                 }
             }

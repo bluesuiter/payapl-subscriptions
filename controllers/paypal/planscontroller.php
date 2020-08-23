@@ -14,7 +14,13 @@ class PlansController extends ControllerClass {
     private $value = 0;
     private $currency = 'GBP';
     private $failAttempts = 2;
-    private $sandboxSecret = 'EPMfU8oyqmTJMiCNrEZDT2ahwi8H5Ks2RLpoZkmaE76N0d8eegtrsn184tH3Xe5lVIq_N8hDGtuUiXvt';
+
+    public function planRoutes(){
+        add_submenu_page('', 'PayPal Plans', 'PayPal Plans', 'delete_pages', 'bspp_paypal_plan', array($this, 'plansList'));
+        add_submenu_page('', 'Add PayPal Plan', 'Add PayPal Plan', 'delete_pages', 'bspp_add_paypal_plan', array($this, 'createSubscriptionPlan'));
+        add_submenu_page('', 'Edit PayPal Plan', 'Edit PayPal Plan', 'delete_pages', 'bspp_edit_plan', array($this, 'editSubscriptionPlan'));
+        add_submenu_page('', 'PayPal Plan', 'PayPal Plan', 'delete_pages', 'bspp_pp_view_plan', array($this, 'viewSubscriptionPlan'));
+    }
 
     /**
      * fetch plans list by product_id
@@ -29,8 +35,7 @@ class PlansController extends ControllerClass {
         $args['endpoint'] = "billing/plans?product_id=$product&page_size=10&page=$paged&total_required=true";
         $plans = (new PayPalController())->getProductRequest($args);
         $plans = getArrayValue($plans, 'plans');
-        pr($plans);
-        bspp_loadView('paypal/plans/index', compact('plans'));
+        return bspp_loadView('paypal/plans/index', compact('plans'));
     }
 
     /**
@@ -44,7 +49,7 @@ class PlansController extends ControllerClass {
         }
         $args['endpoint'] = "billing/plans/$plan";
         $plan = (new PayPalController())->getProductRequest($args);
-        bspp_loadView('paypal/plans/view', compact('plan'));
+        return bspp_loadView('paypal/plans/view', compact('plan'));
     }
 
     /**
@@ -52,6 +57,19 @@ class PlansController extends ControllerClass {
      */
     public function executeCharge(){
         return $this->requestPayment();
+    }
+
+    /**
+     * activate plan
+     */
+    public function activateSubscriptionPlan(){ 
+        if(wp_verify_nonce(getArrayValue($_POST, 'nonce'))){
+            $planId = getArrayValue($_POST, 'plan');
+            $status = getArrayValue($_POST, 'status');
+            $args['endpoint'] = 'billing/plans/'.$planId.'/'.($status == 'ACTIVE' ? 'deactivate' : 'activate');
+            $objPayPal = new PayPalController();
+            return $objPayPal->postProductRequest($args);   
+        }
     }
 
     /**
@@ -65,6 +83,8 @@ class PlansController extends ControllerClass {
      * 
      */
     private function sendSubscribeRequest($args = array()) {
+        $settings = SettingsController::readSettings();
+        
         $this->apiUrl = 'https://api.sandbox.paypal.com/v1/billing/subscriptions';
         $secret = $this->sandboxSecret;    
 
@@ -127,7 +147,7 @@ class PlansController extends ControllerClass {
                                 'total_required' => 'true'];
         
         $data = $this->requestCurl($args);
-        bspp_loadView('paypal/index', ['args' => $data]);
+        return bspp_loadView('paypal/index', ['args' => $data]);
     }
 
     /**
@@ -139,7 +159,7 @@ class PlansController extends ControllerClass {
             echo '<h1 style="color:#b45;">No product selected!</h1>';
             return false;
         }
-        bspp_loadView('paypal/plans/create', compact('product'));
+        return bspp_loadView('paypal/plans/create', compact('product'));
     }
 
     /**
@@ -179,13 +199,33 @@ class PlansController extends ControllerClass {
                 ];
         }
         
-        (new PayPalController())->postProductRequest($args);
+        $result = (new PayPalController())->postProductRequest($args);
+        if(isset(json_decode($result)->id)){
+            return wp_send_json_success('Plan Added Successfully!');
+        }
+
+        $objLogger = new Logger();
+        $objLogger->setModuleName('save_product');
+        $objLogger->setModuleContent($res);
+        $objLogger->createLog();
+        return wp_send_json_error('Some Error Occurred!');
     }
 
     /**
      * 
      */
     public function editSubscriptionPlan(){
-        
+        return bspp_loadView('paypal/plans/edit');
+    }
+
+    public function updateSubscriptionPlan(){
+        $this->verifyNonce('bspp_update_subscription', '_bspp_update_subscription_');
+        $args['endpoint'] = 'billing/plans/'.getArrayValue($_POST, 'plan_id').'/update-pricing-schemes';
+        $args['datafields']['pricing_schemes'][] = ['billing_cycle_sequence' => getArrayValue($_POST, 'billing_cycle_sequence'),
+                               'pricing_scheme' => getArrayValue($_POST, 'pricing_scheme')];
+                               //pr(json_encode($args)); exit;
+        $objPayPal = new PayPalController();
+        $response = $objPayPal->postProductRequest($args); 
+        wp_redirect(admin_url().'admin.php?page=bspp_paypal_proucts');
     }
 }

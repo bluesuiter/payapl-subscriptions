@@ -39,7 +39,7 @@
         <fieldset>
             <p class="col-3">
                 <label>Register page:</label>
-                <select class="col-1" id="register_page" name="register_page"> 
+                <select id="register_page" name="register_page"> 
                     <option value="">
                     <?php echo esc_attr( __( 'Select page' ) ); ?></option> 
                     <?php 
@@ -54,24 +54,8 @@
                 </select>
             </p>
             <p class="col-3">
-                <label>Success page:</label>
-                <select class="col-1" id="success_page" name="success_page"> 
-                    <option value="">
-                    <?php echo esc_attr( __( 'Select page' ) ); ?></option> 
-                    <?php 
-                        $pages = get_pages(); 
-                        foreach ( $pages as $page ) {
-                            $option = '<option value="' .  $page->ID . '">';
-                            $option .= $page->post_title;
-                            $option .= '</option>';
-                            echo $option;
-                        }
-                    ?>
-                </select>
-            </p>
-            <p class="col-3">
-                <label>Failure page:</label>
-                <select class="col-1" id="failure_page" name="failure_page"> 
+                <label>Thank-you page:</label>
+                <select id="thank_page" name="thank_page"> 
                     <option value="">
                     <?php echo esc_attr( __( 'Select page' ) ); ?></option> 
                     <?php 

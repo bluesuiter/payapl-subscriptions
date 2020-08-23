@@ -3,20 +3,11 @@
     <form id="product_form" class="">
         <p class="col-4">
             <label>Product name:</label>
-            <input name="product_name" type="text" value="<?php echo $name?>"  id="product_name">
+            <input name="product_name" disabled type="text" value="<?php echo $name?>"  id="product_name">
         </p>
         <p class="col-4">
             <label>Product description:</label>
             <input name="product_description" type="text" value="<?php echo $description ?>" id="product_description">
-        </p>
-        <p class="col-4">
-            <label>Product type:</label>
-            <select name="product_type" id="product_type">
-                <option value="">Select</option>
-                <option <?php echo $type == 'PHYSICAL' ? 'selected' : '' ?> value="PHYSICAL">Physical</option>
-                <option <?php echo $type == 'DIGITAL' ? 'selected' : '' ?> value="DIGITAL">Digital</option>
-                <option <?php echo $type == 'SERVICE' ? 'selected' : '' ?> value="SERVICE">Service</option>
-            </select>
         </p>
         <p class="col-4">
             <label>Product category:</label>

@@ -34,7 +34,7 @@
     </div>
     <?php wp_nonce_field('bspp_reg_call', 'bspp_r3g_ca11',) ?>
     <input type="hidden" name="action" value="register_user" />
-    <input type="submit" name="submit" value="Register" />
+    <input type="submit" name="submit" id="request_register" value="Register" />
 </form>
 
 <style>
@@ -45,23 +45,25 @@
 <?php $objSettings = new \LcFramework\Controllers\Paypal\SettingsController(); ?>
 <script defer>
 jQuery(function($){
-    $('#register_user').on('submit', function(e){
-        e.preventDefault();
-        if(validateForm('#register_user')){
-            $.post('<?php echo admin_url('admin-ajax.php') ?>', $(this).serialize(), function(res){
-                console.log(res)
-                if(typeof res.success != 'undefined'){
-                    
-                    if(res.success === 'true'){
-                        window.location.replace("<?php echo $objSettings::readSettings('success_page') ?>");
-                    }
+    $('#register_user').on('submit', function(){
+        var form = '#register_user';
+        var res = validateForm(form);
+        console.log(res)
+        return res;
+        // if(res == true){
+            //$(form).submit();
+            // $.post('<?php echo admin_url('admin-ajax.php') ?>', $(form).serialize(), function(res){
+            //     if(typeof res.success != 'undefined'){
+            //         if(res.success === 'true'){
+            //             window.location.href("<?php echo $objSettings::readSettings('success_page') ?>");
+            //         }
 
-                    if(res.success === 'false'){
-                        window.location.replace("<?php echo $objSettings::readSettings('failure_page') ?>");
-                    }
-                }
-            });
-        }
+            //         if(res.success === 'false'){
+            //             window.location.href("<?php echo $objSettings::readSettings('failure_page') ?>");
+            //         }
+            //     }
+            // });
+        // }
     });
 });
 </script>

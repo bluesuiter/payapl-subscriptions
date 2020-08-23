@@ -17,7 +17,6 @@ if(!function_exists('bspp_loadView')){
     }
 }
 
-
 if (!function_exists('getArrayValue')) {
     function getArrayValue($arr, $key)
     {
@@ -31,5 +30,13 @@ if (!function_exists('getArrayValue')) {
             }
         }
         return false;
+    }
+}
+
+if(!function_exists('pr')){
+    function pr($arr){
+        echo '<pre>';
+        print_r($arr);
+        echo '</pre>';
     }
 }

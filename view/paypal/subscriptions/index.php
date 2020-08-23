@@ -5,26 +5,29 @@
             <tr>
                 <th title="Subscriber Id">Sub. Id</th>
                 <th>User</th>
+                <th>Plan</th>
+                <th>E-Mail</th>
                 <th>Status</th>
-                <th>Create Time</th>
-                <th>Approve</th>
-                <th>Edit</th>
-                <th>View</th>
+                <th>Active From</th>
+                <th>Billing Amount</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody> 
-            <?php foreach($result as $record): $subscriberId = getArrayValue($record, 'id'); ?>
+            <?php foreach($result as $record): 
+                    $subscriberId = getArrayValue($record, 'subscription_id'); 
+                    $userId = getArrayValue($record, 'user_id');
+                    $user = get_user_by('ID', $userId);
+                    //print_R($user);
+                ?>
             <tr>
                 <td><?php echo $subscriberId; ?></td>
-                <td><?php echo getArrayValue($record, 'user_id'); ?></td>
+                <td><?php echo get_user_meta($userId, 'first_name', true); ?></td>
+                <td style="text-transform:capitalize"><?php echo implode(',', $user->roles) ?></td>
+                <td><?php echo $user->data->user_email; ?></td>
                 <td><?php echo getArrayValue($record, 'status'); ?></td>
-                <td><?php echo getArrayValue($record, 'create_time'); ?></td>
-                <td>
-                    <a target="_blank" href="<?php echo getArrayValue($record, 'approve_href') ?>" class="button button-small">Approve</a>
-                </td>
-                <td>
-                    <a href="<?php echo admin_url('?page=bspp_edit_sub&id='.$subscriberId); ?>" class="button button-small">Edit</a>
-                </td>
+                <td><?php echo getArrayValue($record, 'status_update_time'); ?></td>
+                <td><?php echo getArrayValue($record, 'last_payment_currency').' '.getArrayValue($record, 'last_payment_amount'); ?></td>
                 <td>
                     <a href="<?php echo admin_url('?page=bspp_view_sub&id='.$subscriberId); ?>" class="button button-small">View</a>
                 </td>
@@ -36,7 +39,6 @@
                 <td colspan="2">
                     <strong class="alignnone">Total Records: <?php echo $totalCount; ?></strong>
                 </td>
-                <td colspan="2"></td>
                 <td colspan="3">
                     <?php $page = isset($_GET['index']) ? $_GET['index'] : 0;
                         if($page > 0){ ?>
@@ -47,8 +49,7 @@
                         if($page < $totalPage){
                     ?>
                     <a class="button button-small alignright" href="<?php echo admin_url('?page=bspp_paypal_subscribers&index='.($page)) ?>">Next</a>
-                    <?php } ?>
-                    
+                    <?php } ?>                    
                 </td>
             </tr>
         </tfoot>
