@@ -62,10 +62,10 @@ class SignUp{
     }
 
     public function selectPlan($plan){
-        $plans['monthly'] = ['name' => 'Gold Monthly',
-                             'plan_id' => 'P-7X742350SF667851RL4G5CJY'];
+        $plans['monthly'] = ['name' => 'Gold Listing - Monthly Subscription',
+                             'plan_id' => 'P-7SY05160UH9007648L3ZVEAA'];
 
-        $plans['yearly'] = ['name' => 'Gold yearly',
+        $plans['yearly'] = ['name' => 'Gold Listing - Yearly Subscription',
                             'plan_id' => 'P-5D985174EE091664ML3ZVGBY'];
         return $plans[$plan]['plan_id'];
     }
