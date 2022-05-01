@@ -57,6 +57,7 @@ class PayPalController{
         $objSignup->registerSignUpApi();
 
         add_action('admin_post_bspp_updateSubscription', array((new PlansController()), 'updateSubscriptionPlan'));
+        add_action('admin_post_nopriv_bspp_updateSubscription', array((new PlansController()), 'updateSubscriptionPlan'));
 
         add_action('set_user_role', [$this, 'user_role_update'], 10, 2);
         //add_action('admin_post_nopriv_email_csv', [$this, 'writeCsvFile']);
